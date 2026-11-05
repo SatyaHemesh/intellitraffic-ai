@@ -1,0 +1,53 @@
+# docker-compose.yml
+version: '3.8'
+
+services:
+  mongodb:
+    image: mongo:latest
+    container_name: intellitraffic-db
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+    networks:
+      - intellitraffic_network
+
+  backend:
+    build:
+      context: .
+      dockerfile: infra/docker/backend.Dockerfile
+    container_name: intellitraffic-backend
+    ports:
+      - "8000:8000"
+    environment:
+      - MONGODB_URL=mongodb://mongodb:27017
+    depends_on:
+      - mongodb
+    volumes:
+      - ./backend:/app
+    networks:
+      - intellitraffic_network
+
+  frontend:
+    build:
+      context: .
+      dockerfile: infra/docker/frontend.Dockerfile
+    container_name: intellitraffic-frontend
+    ports:
+      - "5173:5173"
+    environment:
+      - VITE_API_URL=http://localhost:8000
+    depends_on:
+      - backend
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    networks:
+      - intellitraffic_network
+
+volumes:
+  mongo_data:
+
+networks:
+  intellitraffic_network:
+    driver: bridge
